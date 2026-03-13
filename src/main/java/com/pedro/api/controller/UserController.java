@@ -1,6 +1,6 @@
 package com.pedro.api.controller;
 
-import com.pedro.api.model.User;
+import com.pedro.api.dto.UserDTO;
 import com.pedro.api.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,12 +17,27 @@ public class UserController {
     }
 
     @PostMapping
-    public User create(@RequestBody User user) {
-        return service.save(user);
+    public UserDTO insert(@RequestBody UserDTO dto) {
+        return service.insert(dto);
     }
 
     @GetMapping
-    public List<User> list() {
+    public List<UserDTO> findAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public UserDTO findById(@PathVariable Long id) {
+        return service.findById(id);
+    }
+
+    @PutMapping("/{id}")
+    public UserDTO update(@PathVariable Long id, @RequestBody UserDTO dto) {
+        return service.update(id, dto);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
     }
 }
