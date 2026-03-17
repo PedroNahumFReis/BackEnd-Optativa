@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "users")
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,7 +13,6 @@ public class User {
     private String name;
     private String email;
 
-    // Construtor vazio (JPA)
     public User() {}
 
     public User(String name, String email) {
@@ -21,7 +20,6 @@ public class User {
         this.email = email;
     }
 
-    // Getters e Setters
     public Long getId() { return id; }
 
     public String getName() { return name; }

@@ -3,6 +3,8 @@ package com.pedro.api.controller;
 import com.pedro.api.dto.UserDTO;
 import com.pedro.api.service.UserService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -22,8 +24,8 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserDTO> findAll() {
-        return service.findAll();
+    public Page<UserDTO> list(Pageable pageable) {
+        return service.findAll(pageable);
     }
 
     @GetMapping("/{id}")
