@@ -5,6 +5,8 @@ import com.pedro.api.model.User;
 import com.pedro.api.repository.UserRepository;
 import com.pedro.api.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -28,11 +30,11 @@ public class UserService {
         return new UserDTO(user);
     }
 
-    public List<UserDTO> findAll() {
-        return repository.findAll()
-                .stream()
-                .map(UserDTO::new)
-                .toList();
+    public Page<UserDTO> findAll(Pageable pageable) {
+
+        Page<User> page = repository.findAll(pageable);
+
+        return page.map(UserDTO::new);
     }
 
     public UserDTO findById(Long id) {
@@ -45,8 +47,11 @@ public class UserService {
 
     public UserDTO update(Long id, UserDTO dto) {
 
-        User user = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (!repository.existsById(id)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        User user = repository.getReferenceById(id);
 
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
