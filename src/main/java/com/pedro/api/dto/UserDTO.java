@@ -1,12 +1,9 @@
 package com.pedro.api.dto;
 
 import com.pedro.api.model.User;
-import com.pedro.api.model.enums.UserRole;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UserDTO {
@@ -19,7 +16,8 @@ public class UserDTO {
     private Instant createdAt;
     private Instant updatedAt;
 
-    private Set<UserRole> roles = new HashSet<>();
+    // Agora usamos uma lista de DTOs de Perfil
+    private List<PerfilDTO> perfis = new ArrayList<>();
     private List<TaskDTO> tasks = new ArrayList<>();
 
     public UserDTO() {}
@@ -32,8 +30,13 @@ public class UserDTO {
         this.phone = user.getPhone();
         this.createdAt = user.getCreatedAt();
         this.updatedAt = user.getUpdatedAt();
-        this.roles = user.getRoles();
 
+        // Mapeamento de Perfis (Entidade -> DTO)
+        if (user.getPerfis() != null) {
+            user.getPerfis().forEach(perfil -> this.perfis.add(new PerfilDTO(perfil)));
+        }
+
+        // Mapeamento de Tasks (Entidade -> DTO)
         if (user.getTasks() != null) {
             this.tasks = user.getTasks().stream()
                     .map(TaskDTO::new)
@@ -49,6 +52,6 @@ public class UserDTO {
     public String getPhone() { return phone; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
-    public Set<UserRole> getRoles() { return roles; }
+    public List<PerfilDTO> getPerfis() { return perfis; } // Getter atualizado
     public List<TaskDTO> getTasks() { return tasks; }
 }
