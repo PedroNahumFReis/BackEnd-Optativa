@@ -7,6 +7,7 @@ import com.pedro.api.model.Perfil;
 import com.pedro.api.model.User;
 import com.pedro.api.repository.PerfilRepository;
 import com.pedro.api.repository.UserRepository;
+import com.pedro.api.util.Notificador; // 1. Importe a interface
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,11 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository repository;
-    private final PerfilRepository perfilRepository; // 1. Nova dependência
+    private final PerfilRepository perfilRepository;
+    private final Notificador notificador; // 2. Declare o Notificador
 
-    public UserService(UserRepository repository, PerfilRepository perfilRepository) {
+    // 3. Injete no construtor
+    public UserService(UserRepository repository, PerfilRepository perfilRepository, Notificador notificador) {
         this.repository = repository;
         this.perfilRepository = perfilRepository;
+        this.notificador = notificador;
     }
 
     @Transactional
@@ -28,14 +32,17 @@ public class UserService {
         User user = new User();
         copyDtoToEntity(dto, user);
 
-        // Lógica de perfil padrão: Se não vier perfis, buscamos o ID 2 (ex: ROLE_USER)
-        // Certifique-se de que o ID 2 existe no seu import.sql como ROLE_USER
         if (user.getPerfis().isEmpty()) {
             Perfil defaultPerfil = perfilRepository.getReferenceById(2L);
             user.getPerfis().add(defaultPerfil);
         }
 
         user = repository.save(user);
+
+        // 4. DISPARAR A NOTIFICAÇÃO
+        // O Spring vai usar a implementação que você configurou no ServiceConfig
+        notificador.notificar(user, "Sua conta foi criada com sucesso e está pronta para uso!");
+
         return new UserDTO(user);
     }
 
@@ -62,6 +69,10 @@ public class UserService {
         copyDtoToEntity(dto, user);
 
         user = repository.save(user);
+
+        // Opcional: Notificar em caso de atualização também
+        notificador.notificar(user, "Seus dados foram atualizados no sistema.");
+
         return new UserDTO(user);
     }
 
@@ -79,10 +90,8 @@ public class UserService {
         entity.setPassword(dto.getPassword());
         entity.setPhone(dto.getPhone());
 
-        // 2. Limpamos os perfis antigos e adicionamos os novos baseados no ID do DTO
         entity.getPerfis().clear();
         for (PerfilDTO perfilDto : dto.getPerfis()) {
-            // getReferenceById é mais performático que findById aqui pois não faz um SELECT imediato
             Perfil perfil = perfilRepository.getReferenceById(perfilDto.getId());
             entity.getPerfis().add(perfil);
         }
