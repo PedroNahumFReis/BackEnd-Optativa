@@ -7,7 +7,7 @@ import com.pedro.api.model.Perfil;
 import com.pedro.api.model.User;
 import com.pedro.api.repository.PerfilRepository;
 import com.pedro.api.repository.UserRepository;
-import com.pedro.api.util.Notificador; // 1. Importe a interface
+// Removido o import do Notificador, agora usamos o Service
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,13 +18,13 @@ public class UserService {
 
     private final UserRepository repository;
     private final PerfilRepository perfilRepository;
-    private final Notificador notificador; // 2. Declare o Notificador
+    // 1. Injetamos o novo serviço de ativação
+    private final AtivacaoUsuarioService ativacaoUsuarioService;
 
-    // 3. Injete no construtor
-    public UserService(UserRepository repository, PerfilRepository perfilRepository, Notificador notificador) {
+    public UserService(UserRepository repository, PerfilRepository perfilRepository, AtivacaoUsuarioService ativacaoUsuarioService) {
         this.repository = repository;
         this.perfilRepository = perfilRepository;
-        this.notificador = notificador;
+        this.ativacaoUsuarioService = ativacaoUsuarioService;
     }
 
     @Transactional
@@ -39,9 +39,9 @@ public class UserService {
 
         user = repository.save(user);
 
-        // 4. DISPARAR A NOTIFICAÇÃO
-        // O Spring vai usar a implementação que você configurou no ServiceConfig
-        notificador.notificar(user, "Sua conta foi criada com sucesso e está pronta para uso!");
+        // 2. Chamamos o serviço de ativação em vez do notificador direto
+        // Isso segue o padrão que o seu professor passou na Aula 11
+        ativacaoUsuarioService.ativar(user, "Sua conta foi criada com sucesso e está pronta para uso!");
 
         return new UserDTO(user);
     }
@@ -70,8 +70,8 @@ public class UserService {
 
         user = repository.save(user);
 
-        // Opcional: Notificar em caso de atualização também
-        notificador.notificar(user, "Seus dados foram atualizados no sistema.");
+        // 3. Opcional: Você pode usar o serviço aqui também se quiser padronizar
+        ativacaoUsuarioService.ativar(user, "Seus dados foram atualizados no sistema.");
 
         return new UserDTO(user);
     }
