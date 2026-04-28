@@ -1,5 +1,6 @@
 package com.pedro.api.service;
 
+import com.pedro.api.controller.UserController;
 import com.pedro.api.dto.PerfilDTO;
 import com.pedro.api.dto.UserDTO;
 import com.pedro.api.exception.ResourceNotFoundException;
@@ -7,24 +8,49 @@ import com.pedro.api.model.Perfil;
 import com.pedro.api.model.User;
 import com.pedro.api.repository.PerfilRepository;
 import com.pedro.api.repository.UserRepository;
-// Removido o import do Notificador, agora usamos o Service
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+// Imports estáticos para o HATEOAS ficar limpo
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
 public class UserService {
 
     private final UserRepository repository;
     private final PerfilRepository perfilRepository;
-    // 1. Injetamos o novo serviço de ativação
     private final AtivacaoUsuarioService ativacaoUsuarioService;
+
+    private final Pageable defaultPageable = PageRequest.of(0, 10, Sort.by("name"));
 
     public UserService(UserRepository repository, PerfilRepository perfilRepository, AtivacaoUsuarioService ativacaoUsuarioService) {
         this.repository = repository;
         this.perfilRepository = perfilRepository;
         this.ativacaoUsuarioService = ativacaoUsuarioService;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserDTO> findAll(Pageable pageable) {
+        Page<User> page = repository.findAll(pageable);
+        return page.map(user -> new UserDTO(user)
+                .add(linkTo(methodOn(UserController.class).findById(user.getId())).withRel("Detalhes"))
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public UserDTO findById(Long id) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return new UserDTO(user)
+                .add(linkTo(methodOn(UserController.class).findById(id)).withSelfRel())
+                .add(linkTo(methodOn(UserController.class).list(defaultPageable)).withRel("Lista Completa"))
+                .add(linkTo(methodOn(UserController.class).delete(id)).withRel("Excluir Usuário"));
     }
 
     @Transactional
@@ -38,25 +64,11 @@ public class UserService {
         }
 
         user = repository.save(user);
+        ativacaoUsuarioService.ativar(user, "Conta criada com sucesso!");
 
-        // 2. Chamamos o serviço de ativação em vez do notificador direto
-        // Isso segue o padrão que o seu professor passou na Aula 11
-        ativacaoUsuarioService.ativar(user, "Sua conta foi criada com sucesso e está pronta para uso!");
-
-        return new UserDTO(user);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<UserDTO> findAll(Pageable pageable) {
-        Page<User> page = repository.findAll(pageable);
-        return page.map(UserDTO::new);
-    }
-
-    @Transactional(readOnly = true)
-    public UserDTO findById(Long id) {
-        User user = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return new UserDTO(user);
+        return new UserDTO(user)
+                .add(linkTo(methodOn(UserController.class).findById(user.getId())).withSelfRel())
+                .add(linkTo(methodOn(UserController.class).list(defaultPageable)).withRel("Ver todos"));
     }
 
     @Transactional
@@ -67,13 +79,12 @@ public class UserService {
 
         User user = repository.getReferenceById(id);
         copyDtoToEntity(dto, user);
-
         user = repository.save(user);
 
-        // 3. Opcional: Você pode usar o serviço aqui também se quiser padronizar
-        ativacaoUsuarioService.ativar(user, "Seus dados foram atualizados no sistema.");
+        ativacaoUsuarioService.ativar(user, "Dados atualizados.");
 
-        return new UserDTO(user);
+        return new UserDTO(user)
+                .add(linkTo(methodOn(UserController.class).findById(id)).withSelfRel());
     }
 
     @Transactional
