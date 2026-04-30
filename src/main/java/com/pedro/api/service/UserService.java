@@ -15,12 +15,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Imports estáticos para o HATEOAS ficar limpo
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
 public class UserService {
+
+    // 1. Instância do Logger para monitoramento
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository repository;
     private final PerfilRepository perfilRepository;
@@ -36,6 +41,9 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<UserDTO> findAll(Pageable pageable) {
+        logger.info("Consultando lista de usuários paginada. Página: {}, Tamanho: {}",
+                pageable.getPageNumber(), pageable.getPageSize());
+
         Page<User> page = repository.findAll(pageable);
         return page.map(user -> new UserDTO(user)
                 .add(linkTo(methodOn(UserController.class).findById(user.getId())).withRel("Detalhes"))
@@ -44,8 +52,13 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserDTO findById(Long id) {
+        logger.info("Buscando usuário pelo ID: {}", id);
+
         User user = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    logger.error("Erro: Usuário com ID {} não foi encontrado.", id);
+                    return new ResourceNotFoundException("User not found");
+                });
 
         return new UserDTO(user)
                 .add(linkTo(methodOn(UserController.class).findById(id)).withSelfRel())
@@ -55,15 +68,21 @@ public class UserService {
 
     @Transactional
     public UserDTO insert(UserDTO dto) {
+        logger.info("Iniciando inserção de novo usuário: {}", dto.getEmail());
+
         User user = new User();
         copyDtoToEntity(dto, user);
 
         if (user.getPerfis().isEmpty()) {
+            logger.warn("Nenhum perfil enviado. Atribuindo perfil padrão (ID 2).");
             Perfil defaultPerfil = perfilRepository.getReferenceById(2L);
             user.getPerfis().add(defaultPerfil);
         }
 
         user = repository.save(user);
+
+        logger.info("Usuário salvo com sucesso. ID gerado: {}", user.getId());
+
         ativacaoUsuarioService.ativar(user, "Conta criada com sucesso!");
 
         return new UserDTO(user)
@@ -73,7 +92,10 @@ public class UserService {
 
     @Transactional
     public UserDTO update(Long id, UserDTO dto) {
+        logger.info("Iniciando atualização do usuário ID: {}", id);
+
         if (!repository.existsById(id)) {
+            logger.error("Falha na atualização: Usuário ID {} não existe.", id);
             throw new ResourceNotFoundException("User not found");
         }
 
@@ -81,6 +103,7 @@ public class UserService {
         copyDtoToEntity(dto, user);
         user = repository.save(user);
 
+        logger.info("Usuário ID {} atualizado com sucesso.", id);
         ativacaoUsuarioService.ativar(user, "Dados atualizados.");
 
         return new UserDTO(user)
@@ -89,10 +112,15 @@ public class UserService {
 
     @Transactional
     public void delete(Long id) {
+        logger.warn("Solicitação de exclusão para o usuário ID: {}", id);
+
         if (!repository.existsById(id)) {
+            logger.error("Falha na exclusão: Usuário ID {} não existe.", id);
             throw new ResourceNotFoundException("User not found");
         }
+
         repository.deleteById(id);
+        logger.info("Usuário ID {} removido do banco de dados.", id);
     }
 
     private void copyDtoToEntity(UserDTO dto, User entity) {
