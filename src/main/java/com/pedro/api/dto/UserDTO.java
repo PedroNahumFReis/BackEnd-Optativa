@@ -2,13 +2,14 @@ package com.pedro.api.dto;
 
 import com.pedro.api.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.hateoas.RepresentationModel;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Schema(description = "Objeto de transferência de dados do Usuário")
-public class UserDTO {
+@Schema(description = "Objeto de transferência de dados do Usuário com suporte a HATEOAS e Swagger")
+public class UserDTO extends RepresentationModel<UserDTO> {
 
     @Schema(description = "ID único gerado pelo banco de dados", example = "1")
     private Long id;
