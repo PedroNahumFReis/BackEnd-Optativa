@@ -3,20 +3,23 @@ package com.pedro.api.service;
 import com.pedro.api.controller.UserController;
 import com.pedro.api.dto.PerfilDTO;
 import com.pedro.api.dto.UserDTO;
+import com.pedro.api.dto.UserInsertDTO;
+import com.pedro.api.dto.UserUpdateDTO;
 import com.pedro.api.exception.ResourceNotFoundException;
 import com.pedro.api.model.Perfil;
 import com.pedro.api.model.User;
 import com.pedro.api.repository.PerfilRepository;
 import com.pedro.api.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -24,12 +27,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Service
 public class UserService {
 
-    // 1. Instância do Logger para monitoramento
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository repository;
     private final PerfilRepository perfilRepository;
     private final AtivacaoUsuarioService ativacaoUsuarioService;
+
+    @Autowired
+    private PasswordEncoder encoder;
 
     private final Pageable defaultPageable = PageRequest.of(0, 10, Sort.by("name"));
 
@@ -67,22 +72,25 @@ public class UserService {
     }
 
     @Transactional
-    public UserDTO insert(UserDTO dto) {
+    public UserDTO insert(UserInsertDTO dto) {
         logger.info("Iniciando inserção de novo usuário: {}", dto.getEmail());
 
         User user = new User();
+        // Copiamos os dados básicos (nome, email, telefone)
         copyDtoToEntity(dto, user);
+
+        // Criptografamos a senha vinda do DTO antes de salvar no objeto User
+        user.setPassword(encoder.encode(dto.getPassword()));
 
         if (user.getPerfis().isEmpty()) {
             logger.warn("Nenhum perfil enviado. Atribuindo perfil padrão (ID 2).");
             Perfil defaultPerfil = perfilRepository.getReferenceById(2L);
-            user.getPerfis().add(defaultPerfil);
+            user.addPerfil(defaultPerfil); // Usando o método helper que criamos no User
         }
 
         user = repository.save(user);
 
         logger.info("Usuário salvo com sucesso. ID gerado: {}", user.getId());
-
         ativacaoUsuarioService.ativar(user, "Conta criada com sucesso!");
 
         return new UserDTO(user)
@@ -91,20 +99,24 @@ public class UserService {
     }
 
     @Transactional
-    public UserDTO update(Long id, UserDTO dto) {
+    public UserDTO update(Long id, UserUpdateDTO dto) { // Alterado para UserUpdateDTO
         logger.info("Iniciando atualização do usuário ID: {}", id);
 
-        if (!repository.existsById(id)) {
-            logger.error("Falha na atualização: Usuário ID {} não existe.", id);
-            throw new ResourceNotFoundException("User not found");
+        User user = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // 1. Atualiza nome, email e fone
+        copyDtoToEntity(dto, user);
+
+        // 2. Agora o 'getPassword' funciona porque o DTO é do tipo Update!
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            user.setPassword(encoder.encode(dto.getPassword()));
         }
 
-        User user = repository.getReferenceById(id);
-        copyDtoToEntity(dto, user);
         user = repository.save(user);
 
         logger.info("Usuário ID {} atualizado com sucesso.", id);
-        ativacaoUsuarioService.ativar(user, "Dados atualizados.");
+        ativacaoUsuarioService.ativar(user, "Seus dados foram atualizados no sistema.");
 
         return new UserDTO(user)
                 .add(linkTo(methodOn(UserController.class).findById(id)).withSelfRel());
@@ -123,16 +135,21 @@ public class UserService {
         logger.info("Usuário ID {} removido do banco de dados.", id);
     }
 
+    /**
+     * Mapeia os dados do DTO para a Entidade, ignorando a senha
+     * (que deve ser tratada com o encoder separadamente).
+     */
     private void copyDtoToEntity(UserDTO dto, User entity) {
         entity.setName(dto.getName());
         entity.setEmail(dto.getEmail());
-        entity.setPassword(dto.getPassword());
         entity.setPhone(dto.getPhone());
 
         entity.getPerfis().clear();
-        for (PerfilDTO perfilDto : dto.getPerfis()) {
-            Perfil perfil = perfilRepository.getReferenceById(perfilDto.getId());
-            entity.getPerfis().add(perfil);
+        if (dto.getPerfis() != null) {
+            for (PerfilDTO perfilDto : dto.getPerfis()) {
+                Perfil perfil = perfilRepository.getReferenceById(perfilDto.getId());
+                entity.addPerfil(perfil);
+            }
         }
     }
 }

@@ -6,9 +6,9 @@ INSERT INTO tb_perfil (nome) VALUES ('ROLE_EMPLOYEE');
 
 -- 2. POPULAR USUÁRIOS
 -- Usando tb_user conforme o novo Model
-INSERT INTO tb_user (name, email, password, phone, created_at, updated_at) VALUES ('Pedro Nahum', 'pedro@email.com', '123456', '37999991111', NOW(), NOW());
-INSERT INTO tb_user (name, email, password, phone, created_at, updated_at) VALUES ('Maria Silva', 'maria@email.com', '654321', '37999992222', NOW(), NOW());
-INSERT INTO tb_user (name, email, password, phone, created_at, updated_at) VALUES ('Carlos Admin', 'admin@api.com', 'admin123', '37999993333', NOW(), NOW());
+INSERT INTO tb_user (name, email, password, phone, created_at, updated_at) VALUES ('Pedro Nahum', 'pedro@email.com', '2a$10$TOsG1PVqvStv5wbHNH6aue2qoKmH/4eWnqyP.isX0Iy1V76708dgu', '37999991111', NOW(), NOW());
+INSERT INTO tb_user (name, email, password, phone, created_at, updated_at) VALUES ('Maria Silva', 'maria@email.com', '2a$10$TOsG1PVqvStv5wbHNH6aue2qoKmH/4eWnqyP.isX0Iy1V76708dgu', '37999992222', NOW(), NOW());
+INSERT INTO tb_user (name, email, password, phone, created_at, updated_at) VALUES ('Carlos Admin', 'admin@api.com', '2a$10$TOsG1PVqvStv5wbHNH6aue2qoKmH/4eWnqyP.isX0Iy1V76708dgu', '37999993333', NOW(), NOW());
 
 -- 3. VINCULAR USUÁRIOS AOS PERFIS (Tabela de Junção)
 -- Pedro (1) é USER (2)

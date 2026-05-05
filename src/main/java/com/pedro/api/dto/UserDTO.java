@@ -20,9 +20,6 @@ public class UserDTO extends RepresentationModel<UserDTO> {
     @Schema(description = "Endereço de e-mail válido", example = "pedro@email.com")
     private String email;
 
-    @Schema(description = "Senha do usuário (não retornada em buscas)", example = "********")
-    private String password;
-
     @Schema(description = "Telefone para contato e notificações", example = "31999999999")
     private String phone;
 
@@ -44,7 +41,6 @@ public class UserDTO extends RepresentationModel<UserDTO> {
         this.id = user.getId();
         this.name = user.getName();
         this.email = user.getEmail();
-        this.password = user.getPassword();
         this.phone = user.getPhone();
         this.createdAt = user.getCreatedAt();
         this.updatedAt = user.getUpdatedAt();
@@ -64,7 +60,6 @@ public class UserDTO extends RepresentationModel<UserDTO> {
     public Long getId() { return id; }
     public String getName() { return name; }
     public String getEmail() { return email; }
-    public String getPassword() { return password; }
     public String getPhone() { return phone; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
