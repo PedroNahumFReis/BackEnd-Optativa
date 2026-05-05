@@ -5,6 +5,9 @@ import com.pedro.api.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.pedro.api.dto.UserInsertDTO; // Importante!
+import com.pedro.api.dto.UserUpdateDTO; // Importante!
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -31,7 +34,8 @@ public class UserController {
                     @ApiResponse(description = "Erro de validação nos dados enviados", responseCode = "400")
             }
     )
-    public ResponseEntity<UserDTO> insert(@RequestBody UserDTO dto) {
+
+    public ResponseEntity<UserDTO> insert(@RequestBody @Valid UserInsertDTO dto) { // Adicionar o @Valid
         UserDTO newDto = service.insert(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(newDto);
     }
@@ -58,7 +62,7 @@ public class UserController {
 
     @PutMapping(value = "/{id}", produces = "application/json")
     @Operation(summary = "Atualizar dados de um usuário existente")
-    public ResponseEntity<UserDTO> update(@PathVariable Long id, @RequestBody UserDTO dto) {
+    public ResponseEntity<UserDTO> update(@PathVariable Long id, @RequestBody UserUpdateDTO dto) {
         UserDTO updatedDto = service.update(id, dto);
         return ResponseEntity.ok(updatedDto);
     }

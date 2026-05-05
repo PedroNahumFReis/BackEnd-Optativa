@@ -44,8 +44,10 @@ public class User extends BaseEntity {
         this.phone = phone;
     }
 
-    // Getters e Setters
+    // --- GETTERS E SETTERS ---
+
     public Long getId() { return id; }
+    // Opcional: public void setId(Long id) { this.id = id; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -63,4 +65,30 @@ public class User extends BaseEntity {
     public void setPerfis(Set<Perfil> perfis) { this.perfis = perfis; }
 
     public List<Task> getTasks() { return tasks; }
+
+    // --- MÉTODOS DE LÓGICA (ADICIONADOS) ---
+
+    /**
+     * Adiciona um Perfil ao usuário.
+     */
+    public void addPerfil(Perfil perfil) {
+        this.perfis.add(perfil);
+    }
+
+    /**
+     * Verifica se o usuário possui um perfil específico pelo nome (ex: "ADMIN").
+     */
+    public boolean hasPerfil(String perfilNome) {
+        if (this.perfis == null || perfilNome == null) return false;
+        return this.perfis.stream()
+                .anyMatch(p -> p.getNome().equalsIgnoreCase(perfilNome));
+    }
+
+    /**
+     * Adiciona uma tarefa e garante a relação bidirecional.
+     */
+    public void addTask(Task task) {
+        this.tasks.add(task);
+        task.setUser(this);
+    }
 }
