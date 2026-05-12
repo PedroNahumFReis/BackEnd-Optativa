@@ -8,6 +8,7 @@ import com.pedro.api.dto.UserUpdateDTO;
 import com.pedro.api.exception.ResourceNotFoundException;
 import com.pedro.api.model.Perfil;
 import com.pedro.api.model.User;
+import com.pedro.api.projections.UserDetailsProjection;
 import com.pedro.api.repository.PerfilRepository;
 import com.pedro.api.repository.UserRepository;
 import org.slf4j.Logger;
@@ -17,15 +18,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService { // Adicionado o implements UserDetailsService
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
@@ -76,16 +82,14 @@ public class UserService {
         logger.info("Iniciando inserção de novo usuário: {}", dto.getEmail());
 
         User user = new User();
-        // Copiamos os dados básicos (nome, email, telefone)
         copyDtoToEntity(dto, user);
 
-        // Criptografamos a senha vinda do DTO antes de salvar no objeto User
         user.setPassword(encoder.encode(dto.getPassword()));
 
         if (user.getPerfis().isEmpty()) {
             logger.warn("Nenhum perfil enviado. Atribuindo perfil padrão (ID 2).");
             Perfil defaultPerfil = perfilRepository.getReferenceById(2L);
-            user.addPerfil(defaultPerfil); // Usando o método helper que criamos no User
+            user.addPerfil(defaultPerfil);
         }
 
         user = repository.save(user);
@@ -99,16 +103,14 @@ public class UserService {
     }
 
     @Transactional
-    public UserDTO update(Long id, UserUpdateDTO dto) { // Alterado para UserUpdateDTO
+    public UserDTO update(Long id, UserUpdateDTO dto) {
         logger.info("Iniciando atualização do usuário ID: {}", id);
 
         User user = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // 1. Atualiza nome, email e fone
         copyDtoToEntity(dto, user);
 
-        // 2. Agora o 'getPassword' funciona porque o DTO é do tipo Update!
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
             user.setPassword(encoder.encode(dto.getPassword()));
         }
@@ -135,10 +137,6 @@ public class UserService {
         logger.info("Usuário ID {} removido do banco de dados.", id);
     }
 
-    /**
-     * Mapeia os dados do DTO para a Entidade, ignorando a senha
-     * (que deve ser tratada com o encoder separadamente).
-     */
     private void copyDtoToEntity(UserDTO dto, User entity) {
         entity.setName(dto.getName());
         entity.setEmail(dto.getEmail());
@@ -151,5 +149,30 @@ public class UserService {
                 entity.addPerfil(perfil);
             }
         }
+    }
+
+    // --- INTEGRAÇÃO COM O SPRING SECURITY ---
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        logger.info("Spring Security: Buscando usuário e permissões para o email: {}", username);
+
+        List<UserDetailsProjection> dados = repository.searchUserAndRolesByEmail(username);
+
+        if (dados.isEmpty()) {
+            logger.error("Falha na autenticação: Usuário não encontrado ({})", username);
+            throw new UsernameNotFoundException("Usuário não encontrado: " + username);
+        }
+
+        User user = new User();
+        user.setEmail(dados.get(0).getUsername());
+        user.setPassword(dados.get(0).getPassword());
+
+        // Mapeia as Roles (Perfis) retornadas na consulta para o objeto User
+        for (UserDetailsProjection projection : dados) {
+            user.addPerfil(new Perfil(projection.getRoleId(), projection.getAuthority()));
+        }
+
+        return user;
     }
 }

@@ -1,11 +1,13 @@
 package com.pedro.api.model;
 
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+
 import java.util.Objects;
 
 @Entity
 @Table(name = "tb_perfil")
-public class Perfil {
+public class Perfil implements GrantedAuthority {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +27,12 @@ public class Perfil {
     public void setId(Long id) { this.id = id; }
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
+
+    // --- MÉTODOS DO SPRING SECURITY ---
+    @Override
+    public String getAuthority() {
+        return nome;
+    }
 
     @Override
     public boolean equals(Object o) {
