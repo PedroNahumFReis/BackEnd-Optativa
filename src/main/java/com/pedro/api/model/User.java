@@ -1,14 +1,18 @@
 package com.pedro.api.model;
 
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "tb_user") // Alterado para tb_user para seguir o padrão das outras tabelas
-public class User extends BaseEntity {
+@Table(name = "tb_user")
+public class User extends BaseEntity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +27,6 @@ public class User extends BaseEntity {
 
     private String phone;
 
-    // Relacionamento Muitos-para-Muitos com a Entidade Perfil
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "tb_user_perfil",
@@ -44,51 +47,72 @@ public class User extends BaseEntity {
         this.phone = phone;
     }
 
-    // --- GETTERS E SETTERS ---
+    // --- GETTERS E SETTERS PADRÕES ---
 
     public Long getId() { return id; }
-    // Opcional: public void setId(Long id) { this.id = id; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
+    // Este método atende tanto ao seu uso padrão quanto à interface UserDetails
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
-
     public Set<Perfil> getPerfis() { return perfis; }
     public void setPerfis(Set<Perfil> perfis) { this.perfis = perfis; }
-
     public List<Task> getTasks() { return tasks; }
 
-    // --- MÉTODOS DE LÓGICA (ADICIONADOS) ---
+    // --- MÉTODOS DE LÓGICA ---
 
-    /**
-     * Adiciona um Perfil ao usuário.
-     */
     public void addPerfil(Perfil perfil) {
         this.perfis.add(perfil);
     }
 
-    /**
-     * Verifica se o usuário possui um perfil específico pelo nome (ex: "ADMIN").
-     */
     public boolean hasPerfil(String perfilNome) {
         if (this.perfis == null || perfilNome == null) return false;
         return this.perfis.stream()
                 .anyMatch(p -> p.getNome().equalsIgnoreCase(perfilNome));
     }
 
-    /**
-     * Adiciona uma tarefa e garante a relação bidirecional.
-     */
     public void addTask(Task task) {
         this.tasks.add(task);
         task.setUser(this);
+    }
+
+    // --- MÉTODOS EXIGIDOS PELO SPRING SECURITY (USERDETAILS) ---
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return perfis; // Retorna a lista de perfis do usuário
+    }
+
+    @Override
+    public String getUsername() {
+        return email; // Mapeia o "username" do Spring para o e-mail no seu banco
+    }
+
+    // Os métodos abaixo são verificações de conta do Spring Security.
+    // Por padrão, deixamos true. No futuro, se implementar bloqueio de conta, você altera aqui.
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }

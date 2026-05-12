@@ -1,12 +1,12 @@
 package com.pedro.api.controller;
 
 import com.pedro.api.dto.UserDTO;
+import com.pedro.api.dto.UserInsertDTO;
+import com.pedro.api.dto.UserUpdateDTO;
 import com.pedro.api.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import com.pedro.api.dto.UserInsertDTO; // Importante!
-import com.pedro.api.dto.UserUpdateDTO; // Importante!
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,11 +31,10 @@ public class UserController {
             description = "Cadastra um usuário no banco e dispara automaticamente uma notificação de boas-vindas.",
             responses = {
                     @ApiResponse(description = "Usuário criado com sucesso", responseCode = "201"),
-                    @ApiResponse(description = "Erro de validação nos dados enviados", responseCode = "400")
+                    @ApiResponse(description = "Erro de validação nos dados enviados", responseCode = "422") // Ajustado para 422 para bater com o ExceptionHandler
             }
     )
-
-    public ResponseEntity<UserDTO> insert(@RequestBody @Valid UserInsertDTO dto) { // Adicionar o @Valid
+    public ResponseEntity<UserDTO> insert(@RequestBody @Valid UserInsertDTO dto) {
         UserDTO newDto = service.insert(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(newDto);
     }
@@ -62,7 +61,7 @@ public class UserController {
 
     @PutMapping(value = "/{id}", produces = "application/json")
     @Operation(summary = "Atualizar dados de um usuário existente")
-    public ResponseEntity<UserDTO> update(@PathVariable Long id, @RequestBody UserUpdateDTO dto) {
+    public ResponseEntity<UserDTO> update(@PathVariable Long id, @RequestBody @Valid UserUpdateDTO dto) {
         UserDTO updatedDto = service.update(id, dto);
         return ResponseEntity.ok(updatedDto);
     }
