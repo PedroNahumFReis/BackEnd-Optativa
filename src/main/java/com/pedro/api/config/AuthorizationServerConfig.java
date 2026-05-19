@@ -73,17 +73,24 @@ public class AuthorizationServerConfig {
     @Order(2)
     public SecurityFilterChain asSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        // CORREÇÃO: No Spring Boot 3.2, instanciamos o Configurer com 'new' em vez do método estático
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 
+        // 1. Mapeia os endpoints do OAuth2
         http.securityMatcher("/oauth2/**", "/.well-known/**")
                 .with(authorizationServerConfigurer, Customizer.withDefaults());
 
+        // 2. Configura especificamente o endpoint de geração do token (O código do seu professor)
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
                 .tokenEndpoint(tokenEndpoint -> tokenEndpoint
                         .accessTokenRequestConverter(new CustomPasswordAuthenticationConverter())
-                        .authenticationProvider(new CustomPasswordAuthenticationProvider(authorizationService(), tokenGenerator(), userDetailsService, passwordEncoder)));
+                        .authenticationProvider(new CustomPasswordAuthenticationProvider(
+                                authorizationService(), tokenGenerator(), userDetailsService, passwordEncoder)));
 
+        // 3. MATADOR DO ERRO: Desabilita o CSRF e habilita o CORS para o Postman conseguir trafegar livremente
+        http.csrf(csrf -> csrf.disable());
+        http.cors(Customizer.withDefaults());
+
+        // 4. Aceita autenticação de Resource Server para os tokens
         http.oauth2ResourceServer(oauth2ResourceServer -> oauth2ResourceServer.jwt(Customizer.withDefaults()));
 
         return http.build();
@@ -104,7 +111,7 @@ public class AuthorizationServerConfig {
         RegisteredClient registeredClient = RegisteredClient
                 .withId(UUID.randomUUID().toString())
                 .clientId(clientId)
-                .clientSecret(passwordEncoder.encode(clientSecret))
+                .clientSecret(passwordEncoder.encode(clientSecret)) // Deixa o original do professor
                 .scope("read")
                 .scope("write")
                 .authorizationGrantType(new AuthorizationGrantType("password"))
