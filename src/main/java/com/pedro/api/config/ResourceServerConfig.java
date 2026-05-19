@@ -30,14 +30,18 @@ public class ResourceServerConfig {
     @Bean
     @Order(3)
     public SecurityFilterChain rsSecurityFilterChain(HttpSecurity http) throws Exception {
+        // ESSENCIAIS para o Postman conseguir mandar o POST:
         http.csrf(csrf -> csrf.disable());
+        http.cors(Customizer.withDefaults());
 
-        // Por enquanto estamos permitindo todas as requisições para facilitar os testes,
-        // mas a segurança já está rodando por trás.
-        http.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
+        http.authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/oauth2/**", "/.well-known/**").permitAll() // Libera o servidor de token
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/users/**").permitAll()
+                .anyRequest().authenticated() // Tranca o resto
+        );
 
         http.oauth2ResourceServer(oauth2ResourceServer -> oauth2ResourceServer.jwt(Customizer.withDefaults()));
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
         return http.build();
     }
 
