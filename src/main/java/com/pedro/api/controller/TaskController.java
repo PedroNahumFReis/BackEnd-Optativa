@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/tasks")
@@ -67,6 +68,12 @@ public class TaskController {
     public ResponseEntity<TaskDTO> update(@PathVariable Long id, @RequestBody @Valid TaskDTO dto) {
         TaskDTO updatedDto = service.update(id, dto);
         return ResponseEntity.ok(updatedDto);
+    }
+
+    @PutMapping("/{id}/tags")
+    public ResponseEntity<TaskDTO> updateTags(@PathVariable Long id, @RequestBody Set<Long> tagIds) {
+        TaskDTO dto = service.updateTags(id, tagIds);
+        return ResponseEntity.ok().body(dto);
     }
 
     // Apenas administradores podem deletar de forma definitiva uma tarefa

@@ -2,7 +2,9 @@ package com.pedro.api.model;
 
 import com.pedro.api.model.enums.TaskStatus;
 import jakarta.persistence.*;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "tb_task")
@@ -29,15 +31,18 @@ public class Task extends BaseEntity {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    public Category getCategory() { return category; }
+    // ADICIONADO: Relacionamento Muitos-para-Muitos com as Tags e inicialização do Set
+    @ManyToMany
+    @JoinTable(
+            name = "tb_task_tag",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
 
-    public void setCategory(Category category) { this.category = category; }
-
-    // 1. Construtor Padrão (Obrigatório pelo Hibernate)
     public Task() {
     }
 
-    // 2. Getters e Setters (Os "símbolos" que o Java não estava achando)
     public Long getId() {
         return id;
     }
@@ -78,7 +83,23 @@ public class Task extends BaseEntity {
         this.user = user;
     }
 
-    // 3. Equals e HashCode (Boa prática para entidades)
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+
+    // ADICIONADO: Getters e Setters para as Tags
+    public Set<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<Tag> tags) {
+        this.tags = tags;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
