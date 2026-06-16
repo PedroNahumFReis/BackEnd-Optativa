@@ -13,20 +13,17 @@ import org.springframework.context.annotation.Profile;
 @Configuration
 public class ServiceConfig {
 
-    // Lê o valor da chave 'notificador.email.host' no seu application.properties
-    @Value("${notificador.email.host}")
-    private String servidorSMTP;
-
-    @Profile("prod") // Este bean só existirá se o perfil 'prod' estiver ativo
+    @Profile("prod")
     @TipoDoNotificador(TipoDeNotificacao.EMAIL)
     @Bean
-    public Notificador notificacaoEmail() {
+    public Notificador notificacaoEmail(
+            @Value("${notificador.email.host}") String servidorSMTP) {
         NotificacaoEmail notificacaoEmail = new NotificacaoEmail(servidorSMTP);
         notificacaoEmail.setCaixaAlta(true);
         return notificacaoEmail;
     }
 
-    @Profile("dev") // Este bean só existirá se o perfil 'dev' estiver ativo
+    @Profile("dev")
     @TipoDoNotificador(TipoDeNotificacao.SMS)
     @Bean
     public Notificador notificacaoSMS() {
