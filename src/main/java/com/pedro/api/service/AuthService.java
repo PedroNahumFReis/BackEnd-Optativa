@@ -9,12 +9,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.pedro.api.dto.NewPasswordDTO;
+import java.util.List;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Service
 public class AuthService {
+
+    @Autowired
+    private PasswordEncoder encoder;
 
     @Autowired
     private UserRepository userRepository;
@@ -30,6 +36,30 @@ public class AuthService {
 
     @Value("${email.password-recover.token.minutes}")
     private Long tokenMinutes;
+
+    @Transactional
+    public void saveNewPassword(NewPasswordDTO dto) {
+        // 1. Busca no banco se existe um token igual a esse e que NÃO esteja expirado
+        List<PasswordRecover> list = passwordRecoverRepository.searchValidTokens(dto.getToken(), Instant.now());
+
+        if (list.isEmpty()) {
+            throw new RuntimeException("Token not found or expired"); // Troque para sua Exception customizada se quiser
+        }
+
+        // 2. Se achou o token, pega o email associado a ele e busca o usuário
+        User user = userRepository.findByEmail(list.get(0).getEmail());
+
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        // 3. Atualiza a senha (criptografando a nova!)
+        user.setPassword(encoder.encode(dto.getPassword())); // Se o seu set for setSenha, ajuste aqui
+
+        // 4. Salva no banco de dados
+        userRepository.save(user);
+    }
+
 
     @Transactional
     public void createRecoverToken(RequestTokenDTO dto) {

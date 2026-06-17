@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.pedro.api.dto.NewPasswordDTO;
 
 @RestController
 @RequestMapping("/auth")
@@ -19,4 +20,11 @@ public class AuthController {
         authService.createRecoverToken(dto);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping(value = "/new-password")
+    public ResponseEntity<Void> newPassword(@Valid @RequestBody NewPasswordDTO dto) {
+        authService.saveNewPassword(dto);
+        return ResponseEntity.noContent().build(); // Retorna 204 Sucesso
+    }
+
 }
