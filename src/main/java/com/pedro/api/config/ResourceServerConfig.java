@@ -37,7 +37,8 @@ public class ResourceServerConfig {
         http.authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/oauth2/**", "/.well-known/**").permitAll() // Libera o servidor de token
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/users/**").permitAll()
+                .requestMatchers("/users/**").permitAll() // Libera endpoints antigos de usuário
+                .requestMatchers("/auth/**").permitAll()  // <-- LINHA NOVA: Libera a recuperação de senha e signup
                 .anyRequest().authenticated() // Tranca o resto
         );
 
