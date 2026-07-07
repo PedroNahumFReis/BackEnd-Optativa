@@ -1,6 +1,7 @@
 package com.pedro.api.service;
 
 import com.pedro.api.dto.EmailDTO;
+import com.pedro.api.exception.EmailException;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +36,10 @@ public class EmailService {
             logger.info("E-mail enviado com sucesso!");
 
         } catch (Exception e) {
-            logger.error("Falha ao enviar e-mail: {}", e.getMessage());
-            e.printStackTrace();
+            // Antes o erro era engolido (só printStackTrace), então uma falha de envio
+            // passava despercebida. Agora propagamos para o handler global tratar.
+            logger.error("Falha ao enviar e-mail para {}: {}", emailDTO.getTo(), e.getMessage());
+            throw new EmailException("Falha ao enviar e-mail: " + e.getMessage(), e);
         }
     }
 }

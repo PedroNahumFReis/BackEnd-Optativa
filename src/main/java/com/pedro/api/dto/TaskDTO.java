@@ -2,15 +2,22 @@ package com.pedro.api.dto;
 
 import com.pedro.api.model.Task;
 import com.pedro.api.model.enums.TaskStatus;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
 public class TaskDTO {
         private Long id;
+
+        @NotBlank(message = "Campo título obrigatório")
         private String title;
+
         private String description;
         private TaskStatus status;
+
+        @NotNull(message = "O ID do usuário é obrigatório")
         private Long userId;
         private Instant createdAt;
         private Instant updatedAt;
@@ -28,7 +35,9 @@ public class TaskDTO {
                 this.title = task.getTitle();
                 this.description = task.getDescription();
                 this.status = task.getStatus();
-                this.userId = task.getUser().getId();
+                if (task.getUser() != null) {
+                        this.userId = task.getUser().getId();
+                }
                 this.createdAt = task.getCreatedAt();
                 this.updatedAt = task.getUpdatedAt();
 

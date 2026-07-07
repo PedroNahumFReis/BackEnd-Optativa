@@ -1,6 +1,7 @@
 package com.pedro.api.service;
 
 import com.pedro.api.dto.EmailDTO;
+import com.pedro.api.exception.EmailException;
 import com.pedro.api.model.User;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -33,10 +34,16 @@ public class AtivacaoUsuarioService {
 
         EmailDTO emailDTO = new EmailDTO(usuario.getEmail(), assunto, corpo);
 
-        // 4. Disparando o e-mail via Gmail
-        emailService.sendMail(emailDTO);
-
-        logger.info("Ativação concluída para: {}", usuario.getEmail());
+        // 4. Disparando o e-mail via Gmail.
+        // O e-mail de boas-vindas NÃO é crítico: se o envio falhar, apenas registramos
+        // um aviso para não bloquear (nem dar rollback) no cadastro/atualização do usuário.
+        try {
+            emailService.sendMail(emailDTO);
+            logger.info("Ativação concluída para: {}", usuario.getEmail());
+        } catch (EmailException e) {
+            logger.warn("Usuário {} salvo, mas o e-mail de boas-vindas falhou: {}",
+                    usuario.getEmail(), e.getMessage());
+        }
     }
 
     @PostConstruct

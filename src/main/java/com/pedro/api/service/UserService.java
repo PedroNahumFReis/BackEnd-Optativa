@@ -103,6 +103,34 @@ public class UserService implements UserDetailsService { // Adicionado o impleme
     }
 
     @Transactional
+    public UserDTO signup(UserInsertDTO dto) {
+        logger.info("Iniciando auto-cadastro (signup) de usuário: {}", dto.getEmail());
+
+        User user = new User();
+
+        // Ignora qualquer perfil enviado no corpo da requisição para impedir
+        // que alguém se cadastre como ADMIN (escalonamento de privilégio).
+        dto.getPerfis().clear();
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
+
+        // Força SEMPRE o perfil de cliente comum (ROLE_USER).
+        Perfil roleUser = perfilRepository.findByNome("ROLE_USER");
+        user.addPerfil(roleUser);
+
+        user.setPassword(encoder.encode(dto.getPassword()));
+
+        user = repository.save(user);
+
+        logger.info("Signup concluído. Usuário ID {} criado como ROLE_USER.", user.getId());
+        ativacaoUsuarioService.ativar(user, "Conta criada com sucesso!");
+
+        return new UserDTO(user)
+                .add(linkTo(methodOn(UserController.class).findById(user.getId())).withSelfRel());
+    }
+
+    @Transactional
     public UserDTO update(Long id, UserUpdateDTO dto) {
         logger.info("Iniciando atualização do usuário ID: {}", id);
 

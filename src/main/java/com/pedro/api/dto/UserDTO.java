@@ -2,6 +2,8 @@ package com.pedro.api.dto;
 
 import com.pedro.api.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.hateoas.RepresentationModel;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -14,9 +16,12 @@ public class UserDTO extends RepresentationModel<UserDTO> {
     @Schema(description = "ID único gerado pelo banco de dados", example = "1")
     private Long id;
 
+    @NotBlank(message = "Campo nome obrigatório")
     @Schema(description = "Nome completo do usuário", example = "Pedro Nahum")
     private String name;
 
+    @NotBlank(message = "Campo e-mail obrigatório")
+    @Email(message = "E-mail inválido")
     @Schema(description = "Endereço de e-mail válido", example = "pedro@email.com")
     private String email;
 

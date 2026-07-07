@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,9 +26,10 @@ public class UserController {
         this.service = service;
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping(produces = "application/json")
     @Operation(
-            summary = "Criar um novo usuário",
+            summary = "Criar um novo usuário (uso administrativo). Auto-cadastro público é feito em /auth/signup.",
             description = "Cadastra um usuário no banco e dispara automaticamente uma notificação de boas-vindas.",
             responses = {
                     @ApiResponse(description = "Usuário criado com sucesso", responseCode = "201"),
@@ -39,6 +41,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(newDto);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(produces = "application/json")
     @Operation(summary = "Listar todos os usuários de forma paginada")
     public ResponseEntity<Page<UserDTO>> list(Pageable pageable) {
@@ -46,6 +49,7 @@ public class UserController {
         return ResponseEntity.ok(list);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(value = "/{id}", produces = "application/json")
     @Operation(
             summary = "Buscar usuário por ID",
@@ -59,6 +63,7 @@ public class UserController {
         return ResponseEntity.ok(dto);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping(value = "/{id}", produces = "application/json")
     @Operation(summary = "Atualizar dados de um usuário existente")
     public ResponseEntity<UserDTO> update(@PathVariable Long id, @RequestBody @Valid UserUpdateDTO dto) {
@@ -66,6 +71,7 @@ public class UserController {
         return ResponseEntity.ok(updatedDto);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("/{id}")
     @Operation(summary = "Remover um usuário do sistema")
     @ApiResponse(description = "Usuário removido", responseCode = "204")
