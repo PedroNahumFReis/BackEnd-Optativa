@@ -1,10 +1,12 @@
 package com.pedro.api.service;
 
+import com.pedro.api.dto.EmailDTO;
 import com.pedro.api.dto.RequestTokenDTO;
+import com.pedro.api.exception.ResourceNotFoundException;
 import com.pedro.api.model.PasswordRecover;
-import com.pedro.api.model.User; // Ajuste para o nome da sua entidade (User ou Usuario)
+import com.pedro.api.model.User;
 import com.pedro.api.repository.PasswordRecoverRepository;
-import com.pedro.api.repository.UserRepository; // Ajuste para o seu repositório
+import com.pedro.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,8 +30,8 @@ public class AuthService {
     @Autowired
     private PasswordRecoverRepository passwordRecoverRepository;
 
-    // @Autowired
-    // private EmailService emailService; // Descomente quando tiver seu EmailService
+    @Autowired
+    private EmailService emailService;
 
     @Value("${email.password-recover.uri}")
     private String recoverUri;
@@ -43,18 +45,18 @@ public class AuthService {
         List<PasswordRecover> list = passwordRecoverRepository.searchValidTokens(dto.getToken(), Instant.now());
 
         if (list.isEmpty()) {
-            throw new RuntimeException("Token not found or expired"); // Troque para sua Exception customizada se quiser
+            throw new ResourceNotFoundException("Token not found or expired");
         }
 
         // 2. Se achou o token, pega o email associado a ele e busca o usuário
         User user = userRepository.findByEmail(list.get(0).getEmail());
 
         if (user == null) {
-            throw new RuntimeException("User not found");
+            throw new ResourceNotFoundException("User not found");
         }
 
         // 3. Atualiza a senha (criptografando a nova!)
-        user.setPassword(encoder.encode(dto.getPassword())); // Se o seu set for setSenha, ajuste aqui
+        user.setPassword(encoder.encode(dto.getPassword()));
 
         // 4. Salva no banco de dados
         userRepository.save(user);
@@ -63,12 +65,12 @@ public class AuthService {
 
     @Transactional
     public void createRecoverToken(RequestTokenDTO dto) {
-        // Busca o usuário pelo e-mail clássico
+        // Busca o usuário pelo e-mail
         User user = userRepository.findByEmail(dto.getEmail());
 
         // Verifica se ele existe
         if (user == null) {
-            throw new RuntimeException("Email not found"); // Ajuste para a sua Exception personalizada, se tiver
+            throw new ResourceNotFoundException("Email not found");
         }
 
         // Gera o token
@@ -84,7 +86,7 @@ public class AuthService {
         String text = "Acesse o link para definir uma nova senha (válido por " + tokenMinutes + " minutos):\n\n"
                 + recoverUri + token;
 
-        // emailService.sendMail(dto.getEmail(), "Recuperação de senha", text);
-        System.out.println("E-MAIL SIMULADO: " + text); // Mock para você testar no console por enquanto
+        // Envio real do e-mail de recuperação
+        emailService.sendMail(new EmailDTO(dto.getEmail(), "Recuperação de senha", text));
     }
 }

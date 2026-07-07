@@ -56,6 +56,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(err);
     }
 
+    // 2.1. Falha ao enviar e-mail (serviço externo) (502)
+    @ExceptionHandler(EmailException.class)
+    public ResponseEntity<StandardError> email(EmailException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_GATEWAY;
+
+        StandardError err = new StandardError(
+                Instant.now(),
+                status.value(),
+                "Email Service Error",
+                e.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(err);
+    }
+
     // 3. NOVO: Tratamento de Erros de Validação (Ex: @NotBlank, @Email) (422)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationError> validation(MethodArgumentNotValidException e, HttpServletRequest request) {
